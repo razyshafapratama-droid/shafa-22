@@ -1,0 +1,223 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premium Coffee POS</title>
+<style>
+*{box-sizing:border-box}
+body{
+margin:0;
+font-family:'Segoe UI',sans-serif;
+background:linear-gradient(135deg,#3e2723,#6d4c41);
+color:#333;
+}
+.container{
+max-width:1200px;
+margin:20px auto;
+padding:20px;
+}
+.header{
+background:white;
+padding:20px;
+border-radius:20px;
+box-shadow:0 10px 25px rgba(0,0,0,.2);
+margin-bottom:20px;
+}
+.header h1{margin:0;color:#4e342e}
+.grid{
+display:grid;
+grid-template-columns:1.2fr 1fr;
+gap:20px;
+}
+.card{
+background:white;
+border-radius:20px;
+padding:20px;
+box-shadow:0 8px 20px rgba(0,0,0,.15);
+}
+.menu-grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+gap:15px;
+}
+.menu-item{
+background:#f8f5f2;
+padding:15px;
+border-radius:15px;
+text-align:center;
+transition:.2s;
+}
+.menu-item:hover{transform:translateY(-3px)}
+.price{color:#6d4c41;font-weight:bold}
+button{
+background:#6d4c41;
+color:white;
+border:none;
+padding:10px 15px;
+border-radius:10px;
+cursor:pointer;
+}
+button:hover{opacity:.9}
+table{
+width:100%;
+border-collapse:collapse;
+}
+th,td{
+padding:10px;
+border-bottom:1px solid #eee;
+}
+.total-box{
+background:#efebe9;
+padding:15px;
+border-radius:12px;
+margin-top:10px;
+}
+.receipt{
+background:#fff8e1;
+padding:15px;
+border-radius:12px;
+border:2px dashed #bcaaa4;
+}
+input{
+padding:8px;
+border-radius:8px;
+border:1px solid #ccc;
+}
+.badge{
+background:#4caf50;
+color:white;
+padding:5px 10px;
+border-radius:999px;
+font-size:12px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+<h1>☕ Premium Coffee POS</h1>
+<p>Sistem Kasir Modern Coffee Shop</p>
+</div>
+
+<div class="grid">
+
+<div class="card">
+<h2>Menu Coffee</h2>
+<div id="menu" class="menu-grid"></div>
+</div>
+
+<div class="card">
+<h2>🛒 Keranjang</h2>
+<table>
+<thead>
+<tr><th>Menu</th><th>Qty</th><th>Subtotal</th></tr>
+</thead>
+<tbody id="cart"></tbody>
+</table>
+
+<div class="total-box">
+<label>Diskon (%)</label>
+<input type="number" id="discount" value="0" min="0" max="100">
+<h3>Total: Rp <span id="total">0</span></h3>
+<button onclick="checkout()">Cetak Struk</button>
+</div>
+</div>
+
+</div>
+
+<br>
+
+<div class="grid">
+<div class="card">
+<h2>🧾 Struk</h2>
+<div id="receipt" class="receipt">Belum ada transaksi</div>
+</div>
+
+<div class="card">
+<h2>📊 Riwayat Transaksi</h2>
+<table>
+<thead>
+<tr><th>Tanggal</th><th>Total</th></tr>
+</thead>
+<tbody id="history"></tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+<script>
+const menu=[
+["Espresso",18000],["Americano",22000],["Cappuccino",28000],
+["Cafe Latte",30000],["Mocha",32000],["Caramel Latte",35000],
+["Matcha Latte",33000],["Chocolate",25000],["Croissant",18000],
+["Cheesecake",25000],["Brownies",20000],["Cold Brew",28000]
+];
+
+let cart=[];
+let history=[];
+
+function renderMenu(){
+const el=document.getElementById("menu");
+el.innerHTML="";
+menu.forEach((m,i)=>{
+el.innerHTML+=`
+<div class="menu-item">
+<h4>${m[0]}</h4>
+<p class="price">Rp ${m[1].toLocaleString()}</p>
+<button onclick="addItem(${i})">Tambah</button>
+</div>`;
+});
+}
+
+function addItem(i){
+const [name,price]=menu[i];
+let item=cart.find(x=>x.name===name);
+if(item)item.qty++;
+else cart.push({name,price,qty:1});
+renderCart();
+}
+
+function renderCart(){
+let total=0;
+document.getElementById("cart").innerHTML=cart.map(c=>{
+const sub=c.price*c.qty;
+total+=sub;
+return `<tr><td>${c.name}</td><td>${c.qty}</td><td>Rp ${sub.toLocaleString()}</td></tr>`;
+}).join("");
+document.getElementById("total").textContent=total.toLocaleString();
+}
+
+function checkout(){
+let subtotal=cart.reduce((a,b)=>a+b.price*b.qty,0);
+let disc=parseFloat(document.getElementById("discount").value)||0;
+let total=subtotal-(subtotal*disc/100);
+
+document.getElementById("receipt").innerHTML=`
+<h3>☕ Premium Coffee POS</h3>
+${cart.map(c=>`${c.name} x${c.qty} = Rp ${(c.qty*c.price).toLocaleString()}`).join("<br>")}
+<hr>
+Subtotal : Rp ${subtotal.toLocaleString()}<br>
+Diskon : ${disc}%<br>
+<h3>Total Bayar : Rp ${total.toLocaleString()}</h3>
+`;
+
+history.unshift({
+date:new Date().toLocaleString("id-ID"),
+total
+});
+
+document.getElementById("history").innerHTML=history.map(h=>
+`<tr><td>${h.date}</td><td><span class="badge">Rp ${h.total.toLocaleString()}</span></td></tr>`
+).join("");
+
+cart=[];
+renderCart();
+}
+renderMenu();
+</script>
+</body>
+</html>
